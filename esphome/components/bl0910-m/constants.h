@@ -5,17 +5,17 @@ namespace esphome
 {
     namespace bl0910
     {
-        // Conversion
+        // 动态转换系数计算函数 (基于各个通道的采样电阻 R)
+        inline float get_iref(float r) { return 1.097 / (12875.0 * r); }
+        inline float get_pref(float r) { return 120340.9 / (4041259.0 * r); }
+        inline float get_eref(float r) { 
+            return (4194304.0 * 0.032768 * 16.0) / (3600000.0 * 16.0 * (404125.0 * (r * 10.0) / 120340.9)); 
+        }
+        inline float get_ki(float r) { return (12875.0 * r) / 1.097; }
+
+        // 静态固定系数
         static const float BL0910_UREF = 109700.0 / (1316200000); // Voltage
-        static const float BL0910_IREF = 1.097 / (12875 * 5.1); // Current
-        static const float BL0910_PREF = 120340.9 / (4041259 * 5.1); // Power
-        static const float BL0910_WATT = 16 * BL0910_PREF; // Total power
-        static const float BL0910_EREF = 4194304 * 0.032768 * 16 / (3600000 * 16 * (404125 * 51 / 120340.9)); // Energy
-        static const float BL0910_CF = 16 * BL0910_EREF; // Total Energy
-        static const float BL0910_FREF = 10000000; // Frequency
-        static const float BL0910_KI = 12875 * 5.1 / 1.097; // Current coefficient
-        static const float BL0910_KP = 40.4125 * 5.1 / 1.097 / 1.097; // Power coefficient
-        static const float BL0910_TREF = 12.5 / 59 - 40; // Temperature
+        static const float BL0910_FREF = 10000000.0; // Frequency
 
         // Register address
         // Voltage
@@ -106,19 +106,17 @@ namespace esphome
         static const uint8_t BL0910_USR_WRPROT = 0x9E;
         // Reset Register
         static const uint8_t BL0910_SOFT_RESET = 0x9F;
-        // You must first write 0x5555 to the write protection setting register before writing to other registers.
-        static const uint8_t BL0910_READ_COMMAND = 0x35;  // 读操作命令
-        static const uint8_t BL0910_WRITE_COMMAND = 0xCA; // 写操作命令
+        
+        static const uint8_t BL0910_READ_COMMAND = 0x35; 
+        static const uint8_t BL0910_WRITE_COMMAND = 0xCA;
         
         const uint8_t BL0910_INIT[2][6] = {
-            // Reset to default
             {BL0910_WRITE_COMMAND, BL0910_SOFT_RESET, 0x5A, 0x5A, 0x5A, 0x52},
-            // Enable User Operation Write
-            {BL0910_WRITE_COMMAND, BL0910_USR_WRPROT, 0x55, 0x55, 0x00, 0xB7}};
-        static const uint8_t USR_WRPROT_WITABLE[6] = {0xCA, 0x9E, 0x55, 0x55, 0x00, 0xB7};  // 用户寄存器可操作指令
-        static const uint8_t USR_SOFT_RESET[6] = {0xCA, 0x9F, 0x5A, 0x5A, 0x5A, 0x52};  // 用户寄存器可操作指令
-        static const uint8_t USR_WRPROT_ONLYREAD[6] = {0xCA, 0x9E, 0x00, 0x00, 0x00, 0x61}; // 用户寄存器只读指令
+            {BL0910_WRITE_COMMAND, BL0910_USR_WRPROT, 0x55, 0x55, 0x00, 0xB7}
+        };
+        static const uint8_t USR_WRPROT_WITABLE[6] = {0xCA, 0x9E, 0x55, 0x55, 0x00, 0xB7};
+        static const uint8_t USR_SOFT_RESET[6] = {0xCA, 0x9F, 0x5A, 0x5A, 0x5A, 0x52};
+        static const uint8_t USR_WRPROT_ONLYREAD[6] = {0xCA, 0x9E, 0x00, 0x00, 0x00, 0x61};
 
-
-    } // namespace bl0910
-} // namespace esphome
+    } 
+}
