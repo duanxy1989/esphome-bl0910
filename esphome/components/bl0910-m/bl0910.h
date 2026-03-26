@@ -10,25 +10,27 @@ namespace esphome
 {
   namespace bl0910
   {
+    // 新增：区分请求哪种类型的数据，以调用对应的倍率计算函数
+    enum DataType { TYPE_VOLTAGE, TYPE_CURRENT, TYPE_POWER, TYPE_ENERGY, TYPE_FREQUENCY, TYPE_TEMPERATURE, TYPE_TOTAL_POWER, TYPE_TOTAL_ENERGY };
 
     struct DataPacket
-    { // NOLINT(altera-struct-pack-align)
+    { 
       uint8_t l{0};
       uint8_t m{0};
       uint8_t h{0};
-      uint8_t checksum; // checksum
+      uint8_t checksum; 
       uint8_t address;
     } __attribute__((packed));
 
     struct ube24_t
-    { // NOLINT(readability-identifier-naming,altera-struct-pack-align)
+    { 
       uint8_t l{0};
       uint8_t m{0};
       uint8_t h{0};
     } __attribute__((packed));
 
     struct sbe24_t
-    { // NOLINT(readability-identifier-naming,altera-struct-pack-align)
+    { 
       uint8_t l{0};
       uint8_t m{0};
       int8_t h{0};
@@ -95,27 +97,26 @@ namespace esphome
       void setup() override;
       void dump_config() override;
 
-      // --- 新增：供 Python 脚本设置每个通道电阻的接口 ---
-      void set_channel_resistor(int index, float value) {
-        if (index >= 0 && index < 10) {
-          this->channel_resistors_[index] = value;
-        }
-      }
+      // 新增：供 Python 设置各个通道的电阻值
+      void set_resistor(uint8_t channel, float resistor) { this->resistor_[channel] = resistor; }
 
     protected:
       template <typename... Ts>
       friend class ResetEnergyAction;
       void reset_energy_();
-      void read_data_(uint8_t address, float reference, sensor::Sensor *sensor);
+      
+      // 修改：将函数签名改为接受数据类型和通道索引
+      void read_data_(uint8_t address, uint8_t data_type, uint8_t channel, sensor::Sensor *sensor);
       void calculate_power_factor_(sensor::Sensor *current_sensor, sensor::Sensor *voltage_sensor, sensor::Sensor *power_sensor, sensor::Sensor *power_factor_sensor);
-      void bias_correction_(uint8_t address, float measurements, float correction);
-      void gain_correction_(uint8_t address, float measurements, float correction);
+      void bias_correction_(uint8_t address, float measurements, float correction, uint8_t channel);
+      void gain_correction_(uint8_t address, float measurements, float correction, uint8_t channel);
+      
       uint8_t current_channel_{0};
       size_t enqueue_action_(ActionCallbackFuncPtr function);
       void handle_actions_();
 
-      // --- 新增：存储 10 个通道电阻的数组，默认值 5.1 ---
-      float channel_resistors_[10] = {5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f};
+      // 新增：存储 10 个通道的电阻值，默认全为 5.1Ω
+      float resistor_[10]{5.1, 5.1, 5.1, 5.1, 5.1, 5.1, 5.1, 5.1, 5.1, 5.1};
 
     private:
       std::vector<ActionCallbackFuncPtr> action_queue_{};
@@ -128,5 +129,5 @@ namespace esphome
       void play(Ts... x) override { this->parent_->enqueue_action_(&BL0910::reset_energy_); }
     };
 
-  } // namespace bl0910
-} // namespace esphome
+  } 
+}
