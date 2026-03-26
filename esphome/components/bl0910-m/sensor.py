@@ -86,6 +86,7 @@ FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
             cv.Required(CONF_ID): cv.use_id(BL0910),
         }
     ),
+    synchronous=True  # <--- 就是加上这行
 )
 async def reset_energy_to_code(config, action_id, template_arg, args):
     var = cg.new_Pvariable(action_id, template_arg)
