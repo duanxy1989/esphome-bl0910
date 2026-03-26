@@ -4,36 +4,24 @@ import esphome.codegen as cg
 from esphome.components import sensor, uart
 import esphome.config_validation as cv
 from esphome.const import (
-    CONF_CHANNEL, CONF_CURRENT, CONF_ENERGY, CONF_FREQUENCY, CONF_ID, CONF_NAME, 
-    CONF_POWER, CONF_TEMPERATURE, CONF_TOTAL_POWER, CONF_VOLTAGE, CONF_POWER_FACTOR, 
-    DEVICE_CLASS_CURRENT, DEVICE_CLASS_ENERGY, DEVICE_CLASS_FREQUENCY, 
-    DEVICE_CLASS_POWER, DEVICE_CLASS_TEMPERATURE, DEVICE_CLASS_VOLTAGE, 
-    DEVICE_CLASS_POWER_FACTOR, ICON_CURRENT_AC, ICON_THERMOMETER, 
-    STATE_CLASS_MEASUREMENT, STATE_CLASS_TOTAL_INCREASING, UNIT_AMPERE, 
-    UNIT_CELSIUS, UNIT_HERTZ, UNIT_KILOWATT_HOURS, UNIT_VOLT, UNIT_WATT,
+    CONF_CHANNEL, CONF_CURRENT, CONF_ENERGY, CONF_FREQUENCY, CONF_ID, CONF_NAME, CONF_POWER, CONF_TEMPERATURE, CONF_TOTAL_POWER, CONF_VOLTAGE, CONF_POWER_FACTOR, DEVICE_CLASS_CURRENT, DEVICE_CLASS_ENERGY, DEVICE_CLASS_FREQUENCY, DEVICE_CLASS_POWER, DEVICE_CLASS_TEMPERATURE, DEVICE_CLASS_VOLTAGE, DEVICE_CLASS_POWER_FACTOR, ICON_CURRENT_AC, ICON_THERMOMETER, STATE_CLASS_MEASUREMENT, STATE_CLASS_TOTAL_INCREASING, UNIT_AMPERE, UNIT_CELSIUS, UNIT_HERTZ, UNIT_KILOWATT_HOURS, UNIT_VOLT, UNIT_WATT,
 )
 
-# 自定义图标
 ICON_POWER = "mdi:gauge"
 ICON_ENERGY = "mdi:lightning-bolt"
 ICON_FREQUENCY = "mdi:metronome"
 ICON_VOLTAGE = "mdi:sine-wave"
 ICON_POWER_FACTOR = "mdi:angle-acute"
 
-# 新增参数常量
-CONF_RESISTOR = "resistor"
-CONF_TOTAL_ENERGY = "total_energy"
-
-# 组件依赖于UART模块
 DEPENDENCIES = ["uart"]
 AUTO_LOAD = ["bl0910-m"]
+CONF_TOTAL_ENERGY = "total_energy"
+CONF_RESISTOR = "resistor"  # 新增电阻配置项
 
-# 定义命名空间和类
 bl0910_ns = cg.esphome_ns.namespace("bl0910")
 BL0910 = bl0910_ns.class_("BL0910", cg.PollingComponent, uart.UARTDevice)
 ResetEnergyAction = bl0910_ns.class_("ResetEnergyAction", automation.Action)
 
-# 传感器通用配置模式
 def create_sensor_schema(icon, accuracy_decimals, device_class, unit, state_class):
     return sensor.sensor_schema(
         icon=icon,
@@ -43,7 +31,6 @@ def create_sensor_schema(icon, accuracy_decimals, device_class, unit, state_clas
         state_class=state_class,
     )
 
-# 配置模式（CONFIG_SCHEMA）
 CONFIG_SCHEMA = (
     cv.Schema(
         {
@@ -76,8 +63,7 @@ CONFIG_SCHEMA = (
                             create_sensor_schema(ICON_POWER_FACTOR, 3, DEVICE_CLASS_POWER_FACTOR, "", STATE_CLASS_MEASUREMENT),
                             key=CONF_NAME,
                         ),
-                        # --- 这里是新增的电阻配置参数 ---
-                        cv.Optional(CONF_RESISTOR, default=5.1): cv.float_,
+                        cv.Optional(CONF_RESISTOR, default=5.1): cv.float_,  # 允许配置自定义电阻，默认5.1
                     }
                 )
                 for i in range(10)
@@ -111,7 +97,6 @@ async def register_sensor(var, config, sensor_name, sensor_fn):
         sens = await sensor.new_sensor(sensor_config)
         cg.add(sensor_fn(sens))
 
-# 主函数：代码生成
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -129,7 +114,5 @@ async def to_code(config):
             await register_sensor(var, channel_config, CONF_POWER, getattr(var, f"set_power_{i + 1}_sensor"))
             await register_sensor(var, channel_config, CONF_ENERGY, getattr(var, f"set_energy_{i + 1}_sensor"))
             await register_sensor(var, channel_config, CONF_POWER_FACTOR, getattr(var, f"set_power_factor_{i + 1}_sensor"))
-            
-            # --- 新增：把 YAML 里的电阻值传给 C++ ---
-            res_val = channel_config.get(CONF_RESISTOR)
-            cg.add(var.set_channel_resistor(i, res_val))
+            # 将 YAML 中配置的电阻值传递给 C++ 对象
+            cg.add(var.set_resistor(i, channel_config[CONF_RESISTOR]))
