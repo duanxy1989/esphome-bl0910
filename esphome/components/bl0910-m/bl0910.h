@@ -95,6 +95,13 @@ namespace esphome
       void setup() override;
       void dump_config() override;
 
+      // --- 新增：供 Python 脚本设置每个通道电阻的接口 ---
+      void set_channel_resistor(int index, float value) {
+        if (index >= 0 && index < 10) {
+          this->channel_resistors_[index] = value;
+        }
+      }
+
     protected:
       template <typename... Ts>
       friend class ResetEnergyAction;
@@ -106,6 +113,9 @@ namespace esphome
       uint8_t current_channel_{0};
       size_t enqueue_action_(ActionCallbackFuncPtr function);
       void handle_actions_();
+
+      // --- 新增：存储 10 个通道电阻的数组，默认值 5.1 ---
+      float channel_resistors_[10] = {5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f, 5.1f};
 
     private:
       std::vector<ActionCallbackFuncPtr> action_queue_{};
